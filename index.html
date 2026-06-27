@@ -507,7 +507,8 @@
         <button id="selectAllBtn" type="button">Selecionar todos visíveis</button>
         <button id="copyBtn" type="button">Copiar e-mails</button>
         <button id="downloadBtn" type="button">Baixar .txt</button>
-        <button id="generateMailBtn" type="button" class="primary">Gerar links de e-mail</button>
+        <button id="generateMailBtn" type="button">Gerar links individuais</button>
+        <button id="sendAllGmailBtn" type="button" class="primary">Enviar para todos (Gmail)</button>
       </div>
     </div>
 
@@ -519,7 +520,7 @@
         <h2 class="mail-panel-title">Links de e-mail prontos</h2>
         <button class="mail-panel-close" id="closeMailPanel" type="button">Fechar</button>
       </div>
-      <p class="mail-panel-sub">Cada botão abre seu programa de e-mail padrão com o destinatário, assunto e corpo já preenchidos a partir do modelo definido no código.</p>
+      <p class="mail-panel-sub">Links individuais — cada botão abre um rascunho separado no seu cliente de e-mail padrão. Para enviar de uma vez para todos os selecionados, use o botão "Enviar para todos (Gmail)" na barra acima.</p>
       <div class="mail-link-list" id="mailLinkList"></div>
       <p class="mail-panel-footnote" id="mailPanelFootnote"></p>
     </section>
@@ -821,6 +822,57 @@ document.getElementById('generateMailBtn').addEventListener('click', () => {
 
 document.getElementById('closeMailPanel').addEventListener('click', () => {
   document.getElementById('mailPanel').classList.remove('open');
+});
+
+/* ---- Envio único para vários deputados de uma vez, via Gmail Web ----
+   Monta UM link de composição do Gmail com todos os e-mails selecionados
+   no campo "Para" (separados por vírgula), assunto e corpo já preenchidos.
+   Abre na aba do Gmail (precisa estar logado na conta que vai enviar). */
+
+const GMAIL_RECIPIENT_LIMIT_WARNING = 30; // Gmail costuma limitar long URLs/recipients em torno disso
+
+function buildGmailComposeLinkForAll(deputies){
+  const allEmails = deputies.map(d => d.m).join(',');
+  // Para o envio em massa, {{nome}} não tem como ser personalizado por pessoa
+  // (é um único e-mail para vários destinatários), então usamos um texto genérico.
+  const assunto = EMAIL_TEMPLATE.assunto.replaceAll('{{nome}}', 'Deputado(a)');
+  const corpo = EMAIL_TEMPLATE.corpo.replaceAll('{{nome}}', 'Deputado(a)');
+
+  const params = new URLSearchParams();
+  params.set('view', 'cm');
+  params.set('fs', '1');
+  params.set('to', allEmails);
+  params.set('su', assunto);
+  params.set('body', corpo);
+
+  return 'https://mail.google.com/mail/?' + params.toString();
+}
+
+document.getElementById('sendAllGmailBtn').addEventListener('click', () => {
+  const selectedDeputies = getSelectedDeputies();
+
+  if(selectedDeputies.length === 0){
+    alert('Selecione ao menos um deputado (use a caixa no canto de cada card) antes de enviar.');
+    return;
+  }
+
+  const assuntoVazio = EMAIL_TEMPLATE.assunto.includes('TÍTULO DO E-MAIL AQUI');
+  const corpoVazio = EMAIL_TEMPLATE.corpo.includes('CORPO DO E-MAIL AQUI');
+  if(assuntoVazio || corpoVazio){
+    const continuar = confirm('O título e/ou corpo do e-mail ainda estão com o texto de exemplo (EMAIL_TEMPLATE no código). Deseja continuar mesmo assim?');
+    if(!continuar) return;
+  }
+
+  if(selectedDeputies.length > GMAIL_RECIPIENT_LIMIT_WARNING){
+    alert(
+      'Você selecionou ' + selectedDeputies.length + ' deputados, e o limite atual é ' +
+      GMAIL_RECIPIENT_LIMIT_WARNING + '. Desmarque alguns deputados (ou envie em lotes menores) antes de continuar.'
+    );
+    return;
+  }
+
+  const link = buildGmailComposeLinkForAll(selectedDeputies);
+  window.open(link, '_blank');
 });
 
 document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'});
