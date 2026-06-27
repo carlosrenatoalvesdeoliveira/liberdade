@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Câmara dos Deputados — Diretório e Filtro de Contatos</title>
+<style>
+  :root{
+    --paper:#f6f3ec;
+    --ink:#1c1b19;
+    --ink-soft:#55504a;
+    --rule:#d8d2c4;
+    --card:#ffffff;
+    --esquerda:#a8313a;
+    --centro-esquerda:#c06b3e;
+    --centro:#8a7a4e;
+    --centro-direita:#3c6e71;
+    --direita:#1f4e79;
+    --sem:#7a7470;
+    --accent:#1f4e79;
+    --focus:#1f4e79;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Iowan Old Style','Georgia','Times New Roman',serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+
+  .masthead{
+    border-bottom:3px solid var(--ink);
+    padding:28px clamp(16px,5vw,56px) 18px;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 27px,
+        rgba(0,0,0,0.025) 27px,
+        rgba(0,0,0,0.025) 28px
+      );
+  }
+  .masthead-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    flex-wrap:wrap;
+    gap:8px;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    border-bottom:1px solid var(--rule);
+    padding-bottom:10px;
+    margin-bottom:14px;
+  }
+  h1.title{
+    margin:0;
+    font-size:clamp(34px,6vw,58px);
+    font-weight:400;
+    letter-spacing:-.01em;
+    line-height:1.02;
+  }
+  .title em{font-style:italic; font-weight:400;}
+  .subhead{
+    margin:8px 0 0;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:14px;
+    color:var(--ink-soft);
+    max-width:680px;
+    line-height:1.5;
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns:280px 1fr;
+    gap:0;
+    align-items:start;
+  }
+  @media (max-width:860px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  .filters{
+    border-right:1px solid var(--rule);
+    padding:28px clamp(16px,3vw,32px);
+    position:sticky;
+    top:0;
+    align-self:start;
+    max-height:100vh;
+    overflow-y:auto;
+  }
+  @media (max-width:860px){
+    .filters{
+      position:static;
+      max-height:none;
+      border-right:none;
+      border-bottom:3px double var(--ink);
+    }
+  }
+
+  .filters-eyebrow{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0 0 18px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--ink);
+  }
+
+  .filter-group{margin-bottom:26px;}
+  .filter-group legend{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--ink);
+    margin-bottom:10px;
+    padding:0;
+  }
+  .filter-options{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+  }
+  .filter-options.chips{
+    flex-direction:row;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+
+  .chip{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:12px;
+    padding:5px 11px;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    background:transparent;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:all .15s ease;
+    line-height:1.3;
+  }
+  .chip:hover{border-color:var(--ink);color:var(--ink);}
+  .chip:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+  .chip[aria-pressed="true"]{
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+  }
+  .chip .swatch{
+    display:inline-block;
+    width:8px;height:8px;
+    border-radius:50%;
+    margin-right:6px;
+    vertical-align:middle;
+    position:relative;
+    top:-1px;
+  }
+
+  select.select-filter{
+    width:100%;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:13px;
+    padding:8px 10px;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    background:var(--card);
+    color:var(--ink);
+    cursor:pointer;
+  }
+  select.select-filter:focus-visible{outline:2px solid var(--focus); outline-offset:1px;}
+
+  .search-box{
+    width:100%;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:13px;
+    padding:9px 11px;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    background:var(--card);
+    color:var(--ink);
+  }
+  .search-box:focus-visible{outline:2px solid var(--focus); outline-offset:1px;}
+
+  .clear-btn{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--accent);
+    background:none;
+    border:none;
+    cursor:pointer;
+    padding:0;
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  .clear-btn:hover{color:var(--ink);}
+
+  .results{
+    padding:28px clamp(16px,3vw,40px) 60px;
+  }
+
+  .results-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    flex-wrap:wrap;
+    gap:10px;
+    border-bottom:1px solid var(--ink);
+    padding-bottom:10px;
+    margin-bottom:22px;
+  }
+  .results-count{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:12px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .results-count strong{color:var(--ink); font-weight:700;}
+
+  .export-actions{
+    display:flex;
+    gap:14px;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+  }
+  .export-actions button{
+    background:none;
+    border:1px solid var(--ink);
+    color:var(--ink);
+    padding:6px 12px;
+    cursor:pointer;
+    border-radius:2px;
+  }
+  .export-actions button:hover{background:var(--ink); color:var(--paper);}
+  .export-actions button:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:1px;
+    background:var(--rule);
+    border:1px solid var(--rule);
+  }
+
+  .card{
+    background:var(--card);
+    padding:16px 16px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-height:108px;
+  }
+  .card-name{
+    font-size:16.5px;
+    line-height:1.25;
+    margin:0;
+  }
+  .card-meta{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:11px;
+    letter-spacing:.05em;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    color:var(--ink-soft);
+  }
+  .dot{
+    display:inline-block;
+    width:7px;height:7px;
+    border-radius:50%;
+    flex-shrink:0;
+  }
+  .card-meta .uf{
+    font-weight:700;
+    color:var(--ink);
+  }
+  .card-email{
+    margin-top:auto;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:12px;
+    word-break:break-all;
+  }
+  .card-email a{
+    color:var(--accent);
+    text-decoration:none;
+    border-bottom:1px solid transparent;
+  }
+  .card-email a:hover{border-bottom-color:var(--accent);}
+  .card-email a:focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+
+  .card-select{
+    position:absolute;
+    top:12px;
+    right:12px;
+  }
+  .card{position:relative;}
+  .card input[type=checkbox]{
+    width:16px;height:16px;
+    accent-color:var(--ink);
+    cursor:pointer;
+  }
+
+  .empty-state{
+    padding:60px 20px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:14px;
+    border:1px dashed var(--rule);
+  }
+
+  .legend-strip{
+    margin-top:24px;
+    padding-top:16px;
+    border-top:1px solid var(--rule);
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:10.5px;
+    color:var(--ink-soft);
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .legend-strip span{display:flex; align-items:center; gap:6px;}
+
+  .source-note{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:10.5px;
+    color:var(--ink-soft);
+    text-align:center;
+    padding:18px 16px 30px;
+    border-top:1px solid var(--rule);
+  }
+
+  ::selection{background:var(--ink); color:var(--paper);}
+
+  @media (prefers-reduced-motion:no-preference){
+    .card{transition:transform .12s ease;}
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-top">
+    <span>Câmara dos Deputados &middot; 57ª Legislatura</span>
+    <span id="todayLabel"></span>
+  </div>
+  <h1 class="title">Diretório de <em>Contato</em></h1>
+  <p class="subhead">Filtre os 513 deputados federais por espectro político, estado e partido para localizar e exportar endereços de e-mail institucionais (camara.leg.br).</p>
+</header>
+
+<div class="layout">
+  <aside class="filters" aria-label="Filtros">
+    <p class="filters-eyebrow">Filtrar por</p>
+
+    <div class="filter-group">
+      <label for="searchInput" style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:10px;">Buscar nome</label>
+      <input id="searchInput" class="search-box" type="text" placeholder="Ex.: Nikolas, Erika...">
+    </div>
+
+    <fieldset class="filter-group" style="border:none;padding:0;margin:0 0 26px;">
+      <legend>Espectro político</legend>
+      <div class="filter-options chips" id="spectrumChips"></div>
+    </fieldset>
+
+    <fieldset class="filter-group" style="border:none;padding:0;margin:0 0 26px;">
+      <legend>Estado (UF)</legend>
+      <select id="stateSelect" class="select-filter">
+        <option value="">Todos os estados</option>
+      </select>
+    </fieldset>
+
+    <fieldset class="filter-group" style="border:none;padding:0;margin:0 0 10px;">
+      <legend>Partido</legend>
+      <select id="partySelect" class="select-filter">
+        <option value="">Todos os partidos</option>
+      </select>
+    </fieldset>
+
+    <button class="clear-btn" id="clearBtn" type="button">Limpar todos os filtros</button>
+
+    <div class="legend-strip">
+      <span><span class="dot" style="background:#a8313a"></span>Esquerda</span>
+      <span><span class="dot" style="background:#c06b3e"></span>Centro-esquerda</span>
+      <span><span class="dot" style="background:#8a7a4e"></span>Centro</span>
+      <span><span class="dot" style="background:#3c6e71"></span>Centro-direita</span>
+      <span><span class="dot" style="background:#1f4e79"></span>Direita</span>
+      <span><span class="dot" style="background:#7a7470"></span>Sem classificação</span>
+    </div>
+  </aside>
+
+  <main class="results">
+    <div class="results-bar">
+      <p class="results-count"><strong id="countNum">0</strong> deputados encontrados &middot; <span id="selectedCount">0</span> selecionados</p>
+      <div class="export-actions">
+        <button id="selectAllBtn" type="button">Selecionar todos visíveis</button>
+        <button id="copyBtn" type="button">Copiar e-mails</button>
+        <button id="downloadBtn" type="button">Baixar .txt</button>
+      </div>
+    </div>
+
+    <div class="grid" id="resultsGrid" role="list"></div>
+    <div class="empty-state" id="emptyState" style="display:none;">Nenhum deputado corresponde aos filtros selecionados.</div>
+  </main>
+</div>
+
+<p class="source-note">Fonte: Dados Abertos da Câmara dos Deputados. A classificação político-social é uma aproximação por partido e não reflete posicionamento individual declarado.</p>
+
+<script>
+const DATA = [{"n": "Acácio Favacho", "p": "MDB", "e": "AP", "s": "Centro", "m": "dep.acaciofavacho@camara.leg.br"}, {"n": "Adail Filho", "p": "MDB", "e": "AM", "s": "Centro", "m": "dep.adailfilho@camara.leg.br"}, {"n": "Adilson Barroso", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.adilsonbarroso@camara.leg.br"}, {"n": "Adolfo Viana", "p": "PSDB", "e": "BA", "s": "Sem classificação", "m": "dep.adolfoviana@camara.leg.br"}, {"n": "Adriana Ventura", "p": "NOVO", "e": "SP", "s": "Direita", "m": "dep.adrianaventura@camara.leg.br"}, {"n": "Adriano do Baldy", "p": "PP", "e": "GO", "s": "Direita", "m": "dep.adrianodobaldy@camara.leg.br"}, {"n": "Aécio Neves", "p": "PSDB", "e": "MG", "s": "Sem classificação", "m": "dep.aecioneves@camara.leg.br"}, {"n": "Afonso Florence", "p": "PT", "e": "BA", "s": "Esquerda", "m": "dep.afonsoflorence@camara.leg.br"}, {"n": "Afonso Hamm", "p": "PP", "e": "RS", "s": "Direita", "m": "dep.afonsohamm@camara.leg.br"}, {"n": "Afonso Motta", "p": "PDT", "e": "RS", "s": "Centro-esquerda", "m": "dep.afonsomotta@camara.leg.br"}, {"n": "Aguinaldo Ribeiro", "p": "PP", "e": "PB", "s": "Direita", "m": "dep.aguinaldoribeiro@camara.leg.br"}, {"n": "Airton Faleiro", "p": "PT", "e": "PA", "s": "Esquerda", "m": "dep.airtonfaleiro@camara.leg.br"}, {"n": "AJ Albuquerque", "p": "PP", "e": "CE", "s": "Direita", "m": "dep.ajalbuquerque@camara.leg.br"}, {"n": "Alberto Fraga", "p": "PL", "e": "DF", "s": "Direita", "m": "dep.albertofraga@camara.leg.br"}, {"n": "Albuquerque", "p": "REPUBLICANOS", "e": "RR", "s": "Direita", "m": "dep.albuquerque@camara.leg.br"}, {"n": "Alceu Moreira", "p": "MDB", "e": "RS", "s": "Centro", "m": "dep.alceumoreira@camara.leg.br"}, {"n": "Alencar Santana", "p": "PT", "e": "SP", "s": "Esquerda", "m": "dep.alencarsantana@camara.leg.br"}, {"n": "Alex Manente", "p": "CIDADANIA", "e": "SP", "s": "Centro", "m": "dep.alexmanente@camara.leg.br"}, {"n": "Alexandre Guimarães", "p": "MDB", "e": "TO", "s": "Centro", "m": "dep.alexandreguimaraes@camara.leg.br"}, {"n": "Alexandre Leite", "p": "UNIÃO", "e": "SP", "s": "Centro-direita", "m": "dep.alexandreleite@camara.leg.br"}, {"n": "Alexandre Lindenmeyer", "p": "PT", "e": "RS", "s": "Esquerda", "m": "dep.alexandrelindenmeyer@camara.leg.br"}, {"n": "Alfredinho", "p": "PT", "e": "SP", "s": "Esquerda", "m": "dep.alfredinho@camara.leg.br"}, {"n": "Alfredo Gaspar", "p": "PL", "e": "AL", "s": "Direita", "m": "dep.alfredogaspar@camara.leg.br"}, {"n": "Alice Portugal", "p": "PCdoB", "e": "BA", "s": "Sem classificação", "m": "dep.aliceportugal@camara.leg.br"}, {"n": "Aliel Machado", "p": "PV", "e": "PR", "s": "Centro-esquerda", "m": "dep.alielmachado@camara.leg.br"}, {"n": "Aline Gurgel", "p": "UNIÃO", "e": "AP", "s": "Centro-direita", "m": "dep.alinegurgel@camara.leg.br"}, {"n": "Altineu Côrtes", "p": "PL", "e": "RJ", "s": "Direita", "m": "dep.altineucortes@camara.leg.br"}, {"n": "Aluisio Mendes", "p": "REPUBLICANOS", "e": "MA", "s": "Direita", "m": "dep.aluisiomendes@camara.leg.br"}, {"n": "Amanda Gentil", "p": "PP", "e": "MA", "s": "Direita", "m": "dep.amandagentil@camara.leg.br"}, {"n": "Amaro Neto", "p": "PP", "e": "ES", "s": "Direita", "m": "dep.amaroneto@camara.leg.br"}, {"n": "Amom Mandel", "p": "REPUBLICANOS", "e": "AM", "s": "Direita", "m": "dep.amommandel@camara.leg.br"}, {"n": "Ana Paula Leão", "p": "PP", "e": "MG", "s": "Direita", "m": "dep.anapaulaleao@camara.leg.br"}, {"n": "Ana Paula Lima", "p": "PT", "e": "SC", "s": "Esquerda", "m": "dep.anapaulalima@camara.leg.br"}, {"n": "Ana Pimentel", "p": "PT", "e": "MG", "s": "Esquerda", "m": "dep.anapimentel@camara.leg.br"}, {"n": "André Abdon", "p": "PP", "e": "AP", "s": "Direita", "m": "dep.andreabdon@camara.leg.br"}, {"n": "André Fernandes", "p": "PL", "e": "CE", "s": "Direita", "m": "dep.andrefernandes@camara.leg.br"}, {"n": "André Ferreira", "p": "PL", "e": "PE", "s": "Direita", "m": "dep.andreferreira@camara.leg.br"}, {"n": "André Figueiredo", "p": "PDT", "e": "CE", "s": "Centro-esquerda", "m": "dep.andrefigueiredo@camara.leg.br"}, {"n": "André Fufuca", "p": "PP", "e": "MA", "s": "Direita", "m": "dep.andrefufuca@camara.leg.br"}, {"n": "André Janones", "p": "REDE", "e": "MG", "s": "Centro-esquerda", "m": "dep.andrejanones@camara.leg.br"}, {"n": "Andreia Siqueira", "p": "PSB", "e": "PA", "s": "Centro-esquerda", "m": "dep.andreiasiqueira@camara.leg.br"}, {"n": "Antônia Lúcia", "p": "MDB", "e": "AC", "s": "Centro", "m": "dep.antonialucia@camara.leg.br"}, {"n": "Antonio Andrade", "p": "PSDB", "e": "TO", "s": "Sem classificação", "m": "dep.antonioandrade@camara.leg.br"}, {"n": "Antonio Brito", "p": "PSD", "e": "BA", "s": "Sem classificação", "m": "dep.antoniobrito@camara.leg.br"}, {"n": "Antonio Carlos Rodrigues", "p": "PODE", "e": "SP", "s": "Sem classificação", "m": "dep.antoniocarlosrodrigues@camara.leg.br"}, {"n": "Antônio Doido", "p": "MDB", "e": "PA", "s": "Centro", "m": "dep.antoniodoido@camara.leg.br"}, {"n": "Any Ortiz", "p": "PP", "e": "RS", "s": "Direita", "m": "dep.anyortiz@camara.leg.br"}, {"n": "Arlindo Chinaglia", "p": "PT", "e": "SP", "s": "Esquerda", "m": "dep.arlindochinaglia@camara.leg.br"}, {"n": "Arnaldo Jardim", "p": "CIDADANIA", "e": "SP", "s": "Centro", "m": "dep.arnaldojardim@camara.leg.br"}, {"n": "Arthur Lira", "p": "PP", "e": "AL", "s": "Direita", "m": "dep.arthurlira@camara.leg.br"}, {"n": "Arthur Oliveira Maia", "p": "UNIÃO", "e": "BA", "s": "Centro-direita", "m": "dep.arthuroliveiramaia@camara.leg.br"}, {"n": "Átila Lins", "p": "PSD", "e": "AM", "s": "Sem classificação", "m": "dep.atilalins@camara.leg.br"}, {"n": "Átila Lira", "p": "PP", "e": "PI", "s": "Direita", "m": "dep.atilamlira@camara.leg.br"}, {"n": "Augusto Coutinho", "p": "REPUBLICANOS", "e": "PE", "s": "Direita", "m": "dep.augustocoutinho@camara.leg.br"}, {"n": "Aureo Ribeiro", "p": "SOLIDARIEDADE", "e": "RJ", "s": "Sem classificação", "m": "dep.aureoribeiro@camara.leg.br"}, {"n": "Bacelar", "p": "PV", "e": "BA", "s": "Centro-esquerda", "m": "dep.bacelar@camara.leg.br"}, {"n": "Baleia Rossi", "p": "MDB", "e": "SP", "s": "Centro", "m": "dep.baleiarossi@camara.leg.br"}, {"n": "Bandeira de Mello", "p": "PV", "e": "RJ", "s": "Centro-esquerda", "m": "dep.bandeirademello@camara.leg.br"}, {"n": "Bebeto", "p": "PP", "e": "RJ", "s": "Direita", "m": "dep.bebeto@camara.leg.br"}, {"n": "Benedita da Silva", "p": "PT", "e": "RJ", "s": "Esquerda", "m": "dep.beneditadasilva@camara.leg.br"}, {"n": "Benes Leocádio", "p": "UNIÃO", "e": "RN", "s": "Centro-direita", "m": "dep.benesleocadio@camara.leg.br"}, {"n": "Beto Pereira", "p": "REPUBLICANOS", "e": "MS", "s": "Direita", "m": "dep.betopereira@camara.leg.br"}, {"n": "Beto Preto", "p": "PSD", "e": "PR", "s": "Sem classificação", "m": "dep.betopreto@camara.leg.br"}, {"n": "Beto Richa", "p": "PSDB", "e": "PR", "s": "Sem classificação", "m": "dep.betoricha@camara.leg.br"}, {"n": "Bia Kicis", "p": "PL", "e": "DF", "s": "Direita", "m": "dep.biakicis@camara.leg.br"}, {"n": "Bibo Nunes", "p": "PL", "e": "RS", "s": "Direita", "m": "dep.bibonunes@camara.leg.br"}, {"n": "Bohn Gass", "p": "PT", "e": "RS", "s": "Esquerda", "m": "dep.bohngass@camara.leg.br"}, {"n": "Bruno Farias", "p": "REPUBLICANOS", "e": "MG", "s": "Direita", "m": "dep.brunofarias@camara.leg.br"}, {"n": "Bruno Ganem", "p": "PODE", "e": "SP", "s": "Sem classificação", "m": "dep.brunoganem@camara.leg.br"}, {"n": "Cabo Gilberto Silva", "p": "PL", "e": "PB", "s": "Direita", "m": "dep.cabogilbertosilva@camara.leg.br"}, {"n": "Camila Jara", "p": "PT", "e": "MS", "s": "Esquerda", "m": "dep.camilajara@camara.leg.br"}, {"n": "Capitão Alberto Neto", "p": "PL", "e": "AM", "s": "Direita", "m": "dep.capitaoalbertoneto@camara.leg.br"}, {"n": "Capitão Alden", "p": "PL", "e": "BA", "s": "Direita", "m": "dep.capitaoalden@camara.leg.br"}, {"n": "Capitão Augusto", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.capitaoaugusto@camara.leg.br"}, {"n": "Carla Dickson", "p": "PL", "e": "RN", "s": "Direita", "m": "dep.carladickson@camara.leg.br"}, {"n": "Carlos Chiodini", "p": "MDB", "e": "SC", "s": "Centro", "m": "dep.carloschiodini@camara.leg.br"}, {"n": "Carlos Gomes", "p": "REPUBLICANOS", "e": "RS", "s": "Direita", "m": "dep.carlosgomes@camara.leg.br"}, {"n": "Carlos Henrique Gaguim", "p": "UNIÃO", "e": "TO", "s": "Centro-direita", "m": "dep.carloshenriquegaguim@camara.leg.br"}, {"n": "Carlos Jordy", "p": "PL", "e": "RJ", "s": "Direita", "m": "dep.carlosjordy@camara.leg.br"}, {"n": "Carlos Sampaio", "p": "PSD", "e": "SP", "s": "Sem classificação", "m": "dep.carlossampaio@camara.leg.br"}, {"n": "Carlos Veras", "p": "PT", "e": "PE", "s": "Esquerda", "m": "dep.carlosveras@camara.leg.br"}, {"n": "Carlos Zarattini", "p": "PT", "e": "SP", "s": "Esquerda", "m": "dep.carloszarattini@camara.leg.br"}, {"n": "Carol Dartora", "p": "PT", "e": "PR", "s": "Esquerda", "m": "dep.caroldartora@camara.leg.br"}, {"n": "Caroline de Toni", "p": "PL", "e": "SC", "s": "Direita", "m": "dep.carolinedetoni@camara.leg.br"}, {"n": "Castro Neto", "p": "MDB", "e": "PI", "s": "Centro", "m": "dep.castroneto@camara.leg.br"}, {"n": "Célia Xakriabá", "p": "PSOL", "e": "MG", "s": "Esquerda", "m": "dep.celiaxakriaba@camara.leg.br"}, {"n": "Célio Silveira", "p": "MDB", "e": "GO", "s": "Centro", "m": "dep.celiosilveira@camara.leg.br"}, {"n": "Célio Studart", "p": "PSD", "e": "CE", "s": "Sem classificação", "m": "dep.celiostudart@camara.leg.br"}, {"n": "Celso Russomanno", "p": "REPUBLICANOS", "e": "SP", "s": "Direita", "m": "dep.celsorussomanno@camara.leg.br"}, {"n": "Celso Sabino", "p": "PDT", "e": "PA", "s": "Centro-esquerda", "m": "dep.celsosabino@camara.leg.br"}, {"n": "Cezinha de Madureira", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.cezinhademadureira@camara.leg.br"}, {"n": "Charles Fernandes", "p": "PSD", "e": "BA", "s": "Sem classificação", "m": "dep.charlesfernandes@camara.leg.br"}, {"n": "Chico Alencar", "p": "PSOL", "e": "RJ", "s": "Esquerda", "m": "dep.chicoalencar@camara.leg.br"}, {"n": "Chris Tonietto", "p": "PL", "e": "RJ", "s": "Direita", "m": "dep.christonietto@camara.leg.br"}, {"n": "Clarissa Tércio", "p": "PP", "e": "PE", "s": "Direita", "m": "dep.clarissatercio@camara.leg.br"}, {"n": "Claudio Cajado", "p": "PP", "e": "BA", "s": "Direita", "m": "dep.claudiocajado@camara.leg.br"}, {"n": "Cleber Verde", "p": "MDB", "e": "MA", "s": "Centro", "m": "dep.cleberverde@camara.leg.br"}, {"n": "Clodoaldo Magalhães", "p": "PV", "e": "PE", "s": "Centro-esquerda", "m": "dep.clodoaldomagalhaes@camara.leg.br"}, {"n": "Cobalchini", "p": "MDB", "e": "SC", "s": "Centro", "m": "dep.cobalchini@camara.leg.br"}, {"n": "Coronel Assis", "p": "PL", "e": "MT", "s": "Direita", "m": "dep.coronelassis@camara.leg.br"}, {"n": "Coronel Chrisóstomo", "p": "PL", "e": "RO", "s": "Direita", "m": "dep.coronelchrisostomo@camara.leg.br"}, {"n": "Coronel Fernanda", "p": "PL", "e": "MT", "s": "Direita", "m": "dep.coronelfernanda@camara.leg.br"}, {"n": "Coronel Meira", "p": "PL", "e": "PE", "s": "Direita", "m": "dep.coronelmeira@camara.leg.br"}, {"n": "Coronel Ulysses", "p": "UNIÃO", "e": "AC", "s": "Centro-direita", "m": "dep.coronelulysses@camara.leg.br"}, {"n": "Cristiane Lopes", "p": "PODE", "e": "RO", "s": "Sem classificação", "m": "dep.cristianelopes@camara.leg.br"}, {"n": "Da Vitoria", "p": "PP", "e": "ES", "s": "Direita", "m": "dep.davitoria@camara.leg.br"}, {"n": "Dagoberto Nogueira", "p": "PP", "e": "MS", "s": "Direita", "m": "dep.dagobertonogueira@camara.leg.br"}, {"n": "Daiana Santos", "p": "PCdoB", "e": "RS", "s": "Sem classificação", "m": "dep.daianasantos@camara.leg.br"}, {"n": "Dal Barreto", "p": "UNIÃO", "e": "BA", "s": "Centro-direita", "m": "dep.dalbarreto@camara.leg.br"}, {"n": "Damião Feliciano", "p": "UNIÃO", "e": "PB", "s": "Centro-direita", "m": "dep.damiaofeliciano@camara.leg.br"}, {"n": "Dandara", "p": "PT", "e": "MG", "s": "Esquerda", "m": "dep.dandara@camara.leg.br"}, {"n": "Dani Cunha", "p": "PL", "e": "RJ", "s": "Direita", "m": "dep.danicunha@camara.leg.br"}, {"n": "Daniel Agrobom", "p": "PSD", "e": "GO", "s": "Sem classificação", "m": "dep.danielagrobom@camara.leg.br"}, {"n": "Daniel Almeida", "p": "PCdoB", "e": "BA", "s": "Sem classificação", "m": "dep.danielalmeida@camara.leg.br"}, {"n": "Daniel Barbosa", "p": "PP", "e": "AL", "s": "Direita", "m": "dep.danielbarbosa@camara.leg.br"}, {"n": "Daniel Freitas", "p": "PL", "e": "SC", "s": "Direita", "m": "dep.danielfreitas@camara.leg.br"}, {"n": "Daniel Trzeciak", "p": "PSDB", "e": "RS", "s": "Sem classificação", "m": "dep.danieltrzeciak@camara.leg.br"}, {"n": "Daniela do Waguinho", "p": "REPUBLICANOS", "e": "RJ", "s": "Direita", "m": "dep.danieladowaguinho@camara.leg.br"}, {"n": "Daniela Reinehr", "p": "PL", "e": "SC", "s": "Direita", "m": "dep.danielareinehr@camara.leg.br"}, {"n": "Danilo Forte", "p": "PP", "e": "CE", "s": "Direita", "m": "dep.daniloforte@camara.leg.br"}, {"n": "Danrlei de Deus Hinterholz", "p": "PSD", "e": "RS", "s": "Sem classificação", "m": "dep.danrleidedeushinterholz@camara.leg.br"}, {"n": "David Soares", "p": "PODE", "e": "SP", "s": "Sem classificação", "m": "dep.davidsoares@camara.leg.br"}, {"n": "Dayany Bittencourt", "p": "UNIÃO", "e": "CE", "s": "Centro-direita", "m": "dep.dayanybittencourt@camara.leg.br"}, {"n": "Defensor Stélio Dener", "p": "UNIÃO", "e": "RR", "s": "Centro-direita", "m": "dep.defensorsteliodener@camara.leg.br"}, {"n": "Delegada Adriana Accorsi", "p": "PT", "e": "GO", "s": "Esquerda", "m": "dep.delegadaadrianaaccorsi@camara.leg.br"}, {"n": "Delegada Ione", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.delegadaione@camara.leg.br"}, {"n": "Delegada Katarina", "p": "PSD", "e": "SE", "s": "Sem classificação", "m": "dep.delegadakatarina@camara.leg.br"}, {"n": "Delegado Bruno Lima", "p": "PODE", "e": "SP", "s": "Sem classificação", "m": "dep.delegadobrunolima@camara.leg.br"}, {"n": "Delegado Caveira", "p": "PL", "e": "PA", "s": "Direita", "m": "dep.delegadocaveira@camara.leg.br"}, {"n": "Delegado da Cunha", "p": "UNIÃO", "e": "SP", "s": "Centro-direita", "m": "dep.delegadodacunha@camara.leg.br"}, {"n": "Delegado Éder Mauro", "p": "PL", "e": "PA", "s": "Direita", "m": "dep.delegadoedermauro@camara.leg.br"}, {"n": "Delegado Fabio Costa", "p": "PP", "e": "AL", "s": "Direita", "m": "dep.delegadofabiocosta@camara.leg.br"}, {"n": "Delegado Marcelo Freitas", "p": "UNIÃO", "e": "MG", "s": "Centro-direita", "m": "dep.delegadomarcelofreitas@camara.leg.br"}, {"n": "Delegado Matheus Laiola", "p": "UNIÃO", "e": "PR", "s": "Centro-direita", "m": "dep.delegadomatheuslaiola@camara.leg.br"}, {"n": "Delegado Palumbo", "p": "PODE", "e": "SP", "s": "Sem classificação", "m": "dep.delegadopalumbo@camara.leg.br"}, {"n": "Delegado Paulo Bilynskyj", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.delegadopaulobilynskyj@camara.leg.br"}, {"n": "Denise Pessôa", "p": "PT", "e": "RS", "s": "Esquerda", "m": "dep.denisepessoa@camara.leg.br"}, {"n": "Detinha", "p": "PL", "e": "MA", "s": "Direita", "m": "dep.detinha@camara.leg.br"}, {"n": "Diego Andrade", "p": "PSD", "e": "MG", "s": "Sem classificação", "m": "dep.diegoandrade@camara.leg.br"}, {"n": "Diego Coronel", "p": "REPUBLICANOS", "e": "BA", "s": "Direita", "m": "dep.diegocoronel@camara.leg.br"}, {"n": "Diego Garcia", "p": "UNIÃO", "e": "PR", "s": "Centro-direita", "m": "dep.diegogarcia@camara.leg.br"}, {"n": "Dilceu Sperafico", "p": "PP", "e": "PR", "s": "Direita", "m": "dep.dilceusperafico@camara.leg.br"}, {"n": "Dilvanda Faro", "p": "PT", "e": "PA", "s": "Esquerda", "m": "dep.dilvandafaro@camara.leg.br"}, {"n": "Dimas Fabiano", "p": "PP", "e": "MG", "s": "Direita", "m": "dep.dimasfabiano@camara.leg.br"}, {"n": "Dimas Gadelha", "p": "PT", "e": "RJ", "s": "Esquerda", "m": "dep.dimasgadelha@camara.leg.br"}, {"n": "Domingos Neto", "p": "PSD", "e": "CE", "s": "Sem classificação", "m": "dep.domingosneto@camara.leg.br"}, {"n": "Domingos Sávio", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.domingossavio@camara.leg.br"}, {"n": "Dorinaldo Malafaia", "p": "PDT", "e": "AP", "s": "Centro-esquerda", "m": "dep.dorinaldomalafaia@camara.leg.br"}, {"n": "Doutor Luizinho", "p": "PP", "e": "RJ", "s": "Direita", "m": "dep.doutorluizinho@camara.leg.br"}, {"n": "Dr Flávio", "p": "PL", "e": "RJ", "s": "Direita", "m": "dep.drflavio@camara.leg.br"}, {"n": "Dr. Daniel Soranz", "p": "PSD", "e": "RJ", "s": "Sem classificação", "m": "dep.dr.danielsoranz@camara.leg.br"}, {"n": "Dr. Fernando Máximo", "p": "PL", "e": "RO", "s": "Direita", "m": "dep.dr.fernandomaximo@camara.leg.br"}, {"n": "Dr. Francisco", "p": "PT", "e": "PI", "s": "Esquerda", "m": "dep.dr.francisco@camara.leg.br"}, {"n": "Dr. Frederico", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.dr.frederico@camara.leg.br"}, {"n": "Dr. Ismael Alexandrino", "p": "PSD", "e": "GO", "s": "Sem classificação", "m": "dep.dr.ismaelalexandrino@camara.leg.br"}, {"n": "Dr. Jaziel", "p": "PL", "e": "CE", "s": "Direita", "m": "dep.dr.jaziel@camara.leg.br"}, {"n": "Dr. Luiz Ovando", "p": "PP", "e": "MS", "s": "Direita", "m": "dep.dr.luizovando@camara.leg.br"}, {"n": "Dr. Victor Linhalis", "p": "PSB", "e": "ES", "s": "Centro-esquerda", "m": "dep.dr.victorlinhalis@camara.leg.br"}, {"n": "Dr. Zacharias Calil", "p": "MDB", "e": "GO", "s": "Centro", "m": "dep.dr.zachariascalil@camara.leg.br"}, {"n": "Dra. Alessandra Haber", "p": "PODE", "e": "PA", "s": "Sem classificação", "m": "dep.dra.alessandrahaber@camara.leg.br"}, {"n": "Duarte Jr.", "p": "AVANTE", "e": "MA", "s": "Centro", "m": "dep.duartejr@camara.leg.br"}, {"n": "Duda Ramos", "p": "PODE", "e": "RR", "s": "Sem classificação", "m": "dep.dudaramos@camara.leg.br"}, {"n": "Duda Salabert", "p": "PSOL", "e": "MG", "s": "Esquerda", "m": "dep.dudasalabert@camara.leg.br"}, {"n": "Eduardo Bismarck", "p": "PV", "e": "CE", "s": "Centro-esquerda", "m": "dep.eduardobismarck@camara.leg.br"}, {"n": "Eduardo da Fonte", "p": "PP", "e": "PE", "s": "Direita", "m": "dep.eduardodafonte@camara.leg.br"}, {"n": "Eduardo Velloso", "p": "SOLIDARIEDADE", "e": "AC", "s": "Sem classificação", "m": "dep.eduardovelloso@camara.leg.br"}, {"n": "Elcione Barbalho", "p": "MDB", "e": "PA", "s": "Centro", "m": "dep.elcionebarbalho@camara.leg.br"}, {"n": "Eli Borges", "p": "REPUBLICANOS", "e": "TO", "s": "Direita", "m": "dep.eliborges@camara.leg.br"}, {"n": "Elmar Nascimento", "p": "UNIÃO", "e": "BA", "s": "Centro-direita", "m": "dep.elmarnascimento@camara.leg.br"}, {"n": "Emanuel Pinheiro Neto", "p": "PSD", "e": "MT", "s": "Sem classificação", "m": "dep.emanuelpinheironeto@camara.leg.br"}, {"n": "Emidinho Madeira", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.emidinhomadeira@camara.leg.br"}, {"n": "Enfermeira Rejane", "p": "PCdoB", "e": "RJ", "s": "Sem classificação", "m": "dep.enfermeirarejane@camara.leg.br"}, {"n": "Eriberto Medeiros", "p": "PSB", "e": "PE", "s": "Centro-esquerda", "m": "dep.eribertomedeiros@camara.leg.br"}, {"n": "Erika Hilton", "p": "PSOL", "e": "SP", "s": "Esquerda", "m": "dep.erikahilton@camara.leg.br"}, {"n": "Erika Kokay", "p": "PT", "e": "DF", "s": "Esquerda", "m": "dep.erikakokay@camara.leg.br"}, {"n": "Eros Biondini", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.erosbiondini@camara.leg.br"}, {"n": "Eunício Oliveira", "p": "MDB", "e": "CE", "s": "Centro", "m": "dep.euniciooliveira@camara.leg.br"}, {"n": "Evair Vieira de Melo", "p": "REPUBLICANOS", "e": "ES", "s": "Direita", "m": "dep.evairvieirademelo@camara.leg.br"}, {"n": "Fabio Garcia", "p": "UNIÃO", "e": "MT", "s": "Centro-direita", "m": "dep.fabiogarcia@camara.leg.br"}, {"n": "Fábio Macedo", "p": "PODE", "e": "MA", "s": "Sem classificação", "m": "dep.fabiomacedo@camara.leg.br"}, {"n": "Fabio Reis", "p": "PSD", "e": "SE", "s": "Sem classificação", "m": "dep.fabioreis@camara.leg.br"}, {"n": "Fabio Schiochet", "p": "UNIÃO", "e": "SC", "s": "Centro-direita", "m": "dep.fabioschiochet@camara.leg.br"}, {"n": "Fábio Teruel", "p": "MDB", "e": "SP", "s": "Centro", "m": "dep.fabioteruel@camara.leg.br"}, {"n": "Fausto Jr.", "p": "UNIÃO", "e": "AM", "s": "Centro-direita", "m": "dep.faustosantosjr@camara.leg.br"}, {"n": "Fausto Pinato", "p": "UNIÃO", "e": "SP", "s": "Centro-direita", "m": "dep.faustopinato@camara.leg.br"}, {"n": "Felipe Becari", "p": "PODE", "e": "SP", "s": "Sem classificação", "m": "dep.felipebecari@camara.leg.br"}, {"n": "Felipe Carreras", "p": "PSB", "e": "PE", "s": "Centro-esquerda", "m": "dep.felipecarreras@camara.leg.br"}, {"n": "Felipe Francischini", "p": "PODE", "e": "PR", "s": "Sem classificação", "m": "dep.felipefrancischini@camara.leg.br"}, {"n": "Félix Mendonça Júnior", "p": "PDT", "e": "BA", "s": "Centro-esquerda", "m": "dep.felixmendoncajunior@camara.leg.br"}, {"n": "Fernanda Melchionna", "p": "PSOL", "e": "RS", "s": "Esquerda", "m": "dep.fernandamelchionna@camara.leg.br"}, {"n": "Fernanda Pessoa", "p": "PSD", "e": "CE", "s": "Sem classificação", "m": "dep.fernandapessoa@camara.leg.br"}, {"n": "Fernando Coelho Filho", "p": "UNIÃO", "e": "PE", "s": "Centro-direita", "m": "dep.fernandocoelhofilho@camara.leg.br"}, {"n": "Fernando Mineiro", "p": "PT", "e": "RN", "s": "Esquerda", "m": "dep.fernandomineiro@camara.leg.br"}, {"n": "Fernando Monteiro", "p": "PSD", "e": "PE", "s": "Sem classificação", "m": "dep.fernandomonteiro@camara.leg.br"}, {"n": "Fernando Rodolfo", "p": "PRD", "e": "PE", "s": "Centro-direita", "m": "dep.fernandorodolfo@camara.leg.br"}, {"n": "Filipe Barros", "p": "PL", "e": "PR", "s": "Direita", "m": "dep.filipebarros@camara.leg.br"}, {"n": "Filipe Martins", "p": "PL", "e": "TO", "s": "Direita", "m": "dep.filipemartins@camara.leg.br"}, {"n": "Flávia Morais", "p": "MDB", "e": "GO", "s": "Centro", "m": "dep.flaviamorais@camara.leg.br"}, {"n": "Flávio Nogueira", "p": "PT", "e": "PI", "s": "Esquerda", "m": "dep.flavionogueira@camara.leg.br"}, {"n": "Florentino Neto", "p": "PT", "e": "PI", "s": "Esquerda", "m": "dep.florentinoneto@camara.leg.br"}, {"n": "Franciane Bayer", "p": "REPUBLICANOS", "e": "RS", "s": "Direita", "m": "dep.francianebayer@camara.leg.br"}, {"n": "Fred Costa", "p": "PRD", "e": "MG", "s": "Centro-direita", "m": "dep.fredcosta@camara.leg.br"}, {"n": "Fred Linhares", "p": "REPUBLICANOS", "e": "DF", "s": "Direita", "m": "dep.fredlinhares@camara.leg.br"}, {"n": "Gabriel Mota", "p": "UNIÃO", "e": "RR", "s": "Centro-direita", "m": "dep.gabrielmota@camara.leg.br"}, {"n": "Gabriel Nunes", "p": "PSD", "e": "BA", "s": "Sem classificação", "m": "dep.gabrielnunes@camara.leg.br"}, {"n": "General Girão", "p": "PL", "e": "RN", "s": "Direita", "m": "dep.generalgirao@camara.leg.br"}, {"n": "General Pazuello", "p": "PL", "e": "RJ", "s": "Direita", "m": "dep.generalpazuello@camara.leg.br"}, {"n": "Geovania de Sá", "p": "REPUBLICANOS", "e": "SC", "s": "Direita", "m": "dep.geovaniadesa@camara.leg.br"}, {"n": "Geraldo Mendes", "p": "UNIÃO", "e": "PR", "s": "Centro-direita", "m": "dep.geraldomendes@camara.leg.br"}, {"n": "Geraldo Resende", "p": "UNIÃO", "e": "MS", "s": "Centro-direita", "m": "dep.geraldoresende@camara.leg.br"}, {"n": "Gervásio Maia", "p": "PCdoB", "e": "PB", "s": "Sem classificação", "m": "dep.gervasiomaia@camara.leg.br"}, {"n": "Gilberto Abramo", "p": "REPUBLICANOS", "e": "MG", "s": "Direita", "m": "dep.gilbertoabramo@camara.leg.br"}, {"n": "Gilberto Nascimento", "p": "PODE", "e": "SP", "s": "Sem classificação", "m": "dep.gilbertonascimento@camara.leg.br"}, {"n": "Gilson Daniel", "p": "PODE", "e": "ES", "s": "Sem classificação", "m": "dep.gilsondaniel@camara.leg.br"}, {"n": "Gilson Marques", "p": "NOVO", "e": "SC", "s": "Direita", "m": "dep.gilsonmarques@camara.leg.br"}, {"n": "Gilvan da Federal", "p": "PL", "e": "ES", "s": "Direita", "m": "dep.gilvandafederal@camara.leg.br"}, {"n": "Giovani Cherini", "p": "PL", "e": "RS", "s": "Direita", "m": "dep.giovanicherini@camara.leg.br"}, {"n": "Glauber Braga", "p": "PSOL", "e": "RJ", "s": "Esquerda", "m": "dep.glauberbraga@camara.leg.br"}, {"n": "Glaustin da Fokus", "p": "PODE", "e": "GO", "s": "Sem classificação", "m": "dep.glaustindafokus@camara.leg.br"}, {"n": "Glaycon Franco", "p": "PSDB", "e": "MG", "s": "Sem classificação", "m": "dep.glayconfranco@camara.leg.br"}, {"n": "Gleisi Hoffmann", "p": "PT", "e": "PR", "s": "Esquerda", "m": "dep.gleisihoffmann@camara.leg.br"}, {"n": "Greyce Elias", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.greyceelias@camara.leg.br"}, {"n": "Guilherme Derrite", "p": "PP", "e": "SP", "s": "Direita", "m": "dep.guilhermederrite@camara.leg.br"}, {"n": "Guilherme Uchoa", "p": "PSD", "e": "PE", "s": "Sem classificação", "m": "dep.guilhermeuchoa@camara.leg.br"}, {"n": "Gustavo Gayer", "p": "PL", "e": "GO", "s": "Direita", "m": "dep.gustavogayer@camara.leg.br"}, {"n": "Gustinho Ribeiro", "p": "PP", "e": "SE", "s": "Direita", "m": "dep.gustinhoribeiro@camara.leg.br"}, {"n": "Gutemberg Reis", "p": "MDB", "e": "RJ", "s": "Centro", "m": "dep.gutembergreis@camara.leg.br"}, {"n": "Heitor Schuch", "p": "PSD", "e": "RS", "s": "Sem classificação", "m": "dep.heitorschuch@camara.leg.br"}, {"n": "Helder Salomão", "p": "PT", "e": "ES", "s": "Esquerda", "m": "dep.heldersalomao@camara.leg.br"}, {"n": "Helena Lima", "p": "PSD", "e": "RR", "s": "Sem classificação", "m": "dep.helenalima@camara.leg.br"}, {"n": "Helio Lopes", "p": "PL", "e": "RJ", "s": "Direita", "m": "dep.heliolopes@camara.leg.br"}, {"n": "Henderson Pinto", "p": "UNIÃO", "e": "PA", "s": "Centro-direita", "m": "dep.hendersonpinto@camara.leg.br"}, {"n": "Hercílio Coelho Diniz", "p": "MDB", "e": "MG", "s": "Centro", "m": "dep.herciliocoelhodiniz@camara.leg.br"}, {"n": "Hildo Rocha", "p": "MDB", "e": "MA", "s": "Centro", "m": "dep.hildorocha@camara.leg.br"}, {"n": "Hugo Leal", "p": "PSD", "e": "RJ", "s": "Sem classificação", "m": "dep.hugoleal@camara.leg.br"}, {"n": "Hugo Motta", "p": "REPUBLICANOS", "e": "PB", "s": "Direita", "m": "dep.hugomotta@camara.leg.br"}, {"n": "Icaro de Valmir", "p": "REPUBLICANOS", "e": "SE", "s": "Direita", "m": "dep.icarodevalmir@camara.leg.br"}, {"n": "Idilvan Alencar", "p": "PSB", "e": "CE", "s": "Centro-esquerda", "m": "dep.idilvanalencar@camara.leg.br"}, {"n": "Igor Timo", "p": "UNIÃO", "e": "MG", "s": "Centro-direita", "m": "dep.igortimo@camara.leg.br"}, {"n": "Ilacir Bicalho", "p": "REPUBLICANOS", "e": "MG", "s": "Direita", "m": "dep.ilacirbicalho@camara.leg.br"}, {"n": "Inácio Arruda", "p": "PCdoB", "e": "CE", "s": "Sem classificação", "m": "dep.inacioarruda@camara.leg.br"}, {"n": "Ismael", "p": "PL", "e": "SC", "s": "Direita", "m": "dep.ismael@camara.leg.br"}, {"n": "Isnaldo Bulhões Jr.", "p": "MDB", "e": "AL", "s": "Centro", "m": "dep.isnaldobulhoesjr@camara.leg.br"}, {"n": "Itamar Paim", "p": "PL", "e": "PR", "s": "Direita", "m": "dep.itamarpaim@camara.leg.br"}, {"n": "Ivoneide Caetano", "p": "PT", "e": "BA", "s": "Esquerda", "m": "dep.ivoneidecaetano@camara.leg.br"}, {"n": "Iza Arruda", "p": "MDB", "e": "PE", "s": "Centro", "m": "dep.izaarruda@camara.leg.br"}, {"n": "Jack Rocha", "p": "PT", "e": "ES", "s": "Esquerda", "m": "dep.jackrocha@camara.leg.br"}, {"n": "Jadyel Alencar", "p": "REPUBLICANOS", "e": "PI", "s": "Direita", "m": "dep.jadyelalencar@camara.leg.br"}, {"n": "Jandira Feghali", "p": "PCdoB", "e": "RJ", "s": "Sem classificação", "m": "dep.jandirafeghali@camara.leg.br"}, {"n": "Jeferson Rodrigues", "p": "PSDB", "e": "GO", "s": "Sem classificação", "m": "dep.jefersonrodrigues@camara.leg.br"}, {"n": "Jefferson Campos", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.jeffersoncampos@camara.leg.br"}, {"n": "Jilmar Tatto", "p": "PT", "e": "SP", "s": "Esquerda", "m": "dep.jilmartatto@camara.leg.br"}, {"n": "João Carlos", "p": "REPUBLICANOS", "e": "AM", "s": "Direita", "m": "dep.joaocarlos@camara.leg.br"}, {"n": "João Carlos Bacelar", "p": "PL", "e": "BA", "s": "Direita", "m": "dep.joaocarlosbacelar@camara.leg.br"}, {"n": "João Cury", "p": "MDB", "e": "SP", "s": "Centro", "m": "dep.joaocury@camara.leg.br"}, {"n": "João Daniel", "p": "PT", "e": "SE", "s": "Esquerda", "m": "dep.joaodaniel@camara.leg.br"}, {"n": "João Maia", "p": "PP", "e": "RN", "s": "Direita", "m": "dep.joaomaia@camara.leg.br"}, {"n": "Joaquim Passarinho", "p": "PL", "e": "PA", "s": "Direita", "m": "dep.joaquimpassarinho@camara.leg.br"}, {"n": "Jonas Donizette", "p": "PSB", "e": "SP", "s": "Centro-esquerda", "m": "dep.jonasdonizette@camara.leg.br"}, {"n": "Jorge Araújo", "p": "PP", "e": "BA", "s": "Direita", "m": "dep.jorgearaujo@camara.leg.br"}, {"n": "Jorge Braz", "p": "REPUBLICANOS", "e": "RJ", "s": "Direita", "m": "dep.jorgebraz@camara.leg.br"}, {"n": "Jorge Goetten", "p": "REPUBLICANOS", "e": "SC", "s": "Direita", "m": "dep.jorgegoetten@camara.leg.br"}, {"n": "Jorge Solla", "p": "PT", "e": "BA", "s": "Esquerda", "m": "dep.jorgesolla@camara.leg.br"}, {"n": "José Airton Félix Cirilo", "p": "PT", "e": "CE", "s": "Esquerda", "m": "dep.joseairtonfelixcirilo@camara.leg.br"}, {"n": "José Medeiros", "p": "PL", "e": "MT", "s": "Direita", "m": "dep.josemedeiros@camara.leg.br"}, {"n": "José Nelto", "p": "UNIÃO", "e": "GO", "s": "Centro-direita", "m": "dep.josenelto@camara.leg.br"}, {"n": "José Priante", "p": "MDB", "e": "PA", "s": "Centro", "m": "dep.josepriante@camara.leg.br"}, {"n": "José Rocha", "p": "UNIÃO", "e": "BA", "s": "Centro-direita", "m": "dep.joserocha@camara.leg.br"}, {"n": "Joseildo Ramos", "p": "PT", "e": "BA", "s": "Esquerda", "m": "dep.joseildoramos@camara.leg.br"}, {"n": "Josenildo", "p": "PDT", "e": "AP", "s": "Centro-esquerda", "m": "dep.josenildo@camara.leg.br"}, {"n": "Josimar Maranhãozinho", "p": "PL", "e": "MA", "s": "Direita", "m": "dep.josimarmaranhaozinho@camara.leg.br"}, {"n": "Josivaldo JP", "p": "UNIÃO", "e": "MA", "s": "Centro-direita", "m": "dep.josivaldojp@camara.leg.br"}, {"n": "Juarez Costa", "p": "REPUBLICANOS", "e": "MT", "s": "Direita", "m": "dep.juarezcosta@camara.leg.br"}, {"n": "Julia Zanatta", "p": "PL", "e": "SC", "s": "Direita", "m": "dep.juliazanatta@camara.leg.br"}, {"n": "Juliana Cardoso", "p": "PT", "e": "SP", "s": "Esquerda", "m": "dep.julianacardoso@camara.leg.br"}, {"n": "Julio Arcoverde", "p": "PP", "e": "PI", "s": "Direita", "m": "dep.julioarcoverde@camara.leg.br"}, {"n": "Júlio Cesar", "p": "PSD", "e": "PI", "s": "Sem classificação", "m": "dep.juliocesar@camara.leg.br"}, {"n": "Julio Cesar Ribeiro", "p": "REPUBLICANOS", "e": "DF", "s": "Direita", "m": "dep.juliocesarribeiro@camara.leg.br"}, {"n": "Julio Lopes", "p": "PP", "e": "RJ", "s": "Direita", "m": "dep.juliolopes@camara.leg.br"}, {"n": "Juninho do Pneu", "p": "PSDB", "e": "RJ", "s": "Sem classificação", "m": "dep.juninhodopneu@camara.leg.br"}, {"n": "Junio Amaral", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.junioamaral@camara.leg.br"}, {"n": "Júnior Ferrari", "p": "PSD", "e": "PA", "s": "Sem classificação", "m": "dep.juniorferrari@camara.leg.br"}, {"n": "Junior Lourenço", "p": "MDB", "e": "MA", "s": "Centro", "m": "dep.juniorlourenco@camara.leg.br"}, {"n": "Júnior Mano", "p": "PSB", "e": "CE", "s": "Centro-esquerda", "m": "dep.juniormano@camara.leg.br"}, {"n": "Juscelino Filho", "p": "PSDB", "e": "MA", "s": "Sem classificação", "m": "dep.juscelinofilho@camara.leg.br"}, {"n": "Keniston Braga", "p": "MDB", "e": "PA", "s": "Centro", "m": "dep.kenistonbraga@camara.leg.br"}, {"n": "Kiko Celeguim", "p": "PT", "e": "SP", "s": "Esquerda", "m": "dep.kikoceleguim@camara.leg.br"}, {"n": "Kim Kataguiri", "p": "MISSÃO", "e": "SP", "s": "Sem classificação", "m": "dep.kimkataguiri@camara.leg.br"}, {"n": "Lafayette de Andrada", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.lafayettedeandrada@camara.leg.br"}, {"n": "Laura Carneiro", "p": "PSD", "e": "RJ", "s": "Sem classificação", "m": "dep.lauracarneiro@camara.leg.br"}, {"n": "Leandre", "p": "PSD", "e": "PR", "s": "Sem classificação", "m": "dep.leandre@camara.leg.br"}, {"n": "Lêda Borges", "p": "REPUBLICANOS", "e": "GO", "s": "Direita", "m": "dep.ledaborges@camara.leg.br"}, {"n": "Leonardo Monteiro", "p": "PT", "e": "MG", "s": "Esquerda", "m": "dep.leonardomonteiro@camara.leg.br"}, {"n": "Leur Lomanto Júnior", "p": "UNIÃO", "e": "BA", "s": "Centro-direita", "m": "dep.leurlomantojunior@camara.leg.br"}, {"n": "Lídice da Mata", "p": "PSB", "e": "BA", "s": "Centro-esquerda", "m": "dep.lidicedamata@camara.leg.br"}, {"n": "Lincoln Portela", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.lincolnportela@camara.leg.br"}, {"n": "Lindbergh Farias", "p": "PT", "e": "RJ", "s": "Esquerda", "m": "dep.lindberghfarias@camara.leg.br"}, {"n": "Lucas Ramos", "p": "PSB", "e": "PE", "s": "Centro-esquerda", "m": "dep.lucasramos@camara.leg.br"}, {"n": "Lucas Redecker", "p": "PSD", "e": "RS", "s": "Sem classificação", "m": "dep.lucasredecker@camara.leg.br"}, {"n": "Luciano Amaral", "p": "PSD", "e": "AL", "s": "Sem classificação", "m": "dep.lucianoamaral@camara.leg.br"}, {"n": "Luciano Bivar", "p": "MDB", "e": "PE", "s": "Centro", "m": "dep.lucianobivar@camara.leg.br"}, {"n": "Luciano Ducci", "p": "PSB", "e": "PR", "s": "Centro-esquerda", "m": "dep.lucianoducci@camara.leg.br"}, {"n": "Lucio Mosquini", "p": "PL", "e": "RO", "s": "Direita", "m": "dep.luciomosquini@camara.leg.br"}, {"n": "Luisa Canziani", "p": "UNIÃO", "e": "PR", "s": "Centro-direita", "m": "dep.luisacanziani@camara.leg.br"}, {"n": "Luiz Carlos Busato", "p": "UNIÃO", "e": "RS", "s": "Centro-direita", "m": "dep.luizcarlosbusato@camara.leg.br"}, {"n": "Luiz Carlos Hauly", "p": "PODE", "e": "PR", "s": "Sem classificação", "m": "dep.luizcarloshauly@camara.leg.br"}, {"n": "Luiz Carlos Motta", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.luizcarlosmotta@camara.leg.br"}, {"n": "Luiz Couto", "p": "PT", "e": "PB", "s": "Esquerda", "m": "dep.luizcouto@camara.leg.br"}, {"n": "Luiz Fernando Faria", "p": "UNIÃO", "e": "MG", "s": "Centro-direita", "m": "dep.luizfernandofaria@camara.leg.br"}, {"n": "Luiz Gastão", "p": "PSD", "e": "CE", "s": "Sem classificação", "m": "dep.luizgastao@camara.leg.br"}, {"n": "Luiz Lima", "p": "NOVO", "e": "RJ", "s": "Direita", "m": "dep.luizlima@camara.leg.br"}, {"n": "Luiz Nishimori", "p": "PSD", "e": "PR", "s": "Sem classificação", "m": "dep.luiznishimori@camara.leg.br"}, {"n": "Luiz Philippe de Orleans e Bragança", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.luizphilippedeorleansebraganca@camara.leg.br"}, {"n": "Luiza Erundina", "p": "PSOL", "e": "SP", "s": "Esquerda", "m": "dep.luizaerundina@camara.leg.br"}, {"n": "Luizianne Lins", "p": "REDE", "e": "CE", "s": "Centro-esquerda", "m": "dep.luiziannelins@camara.leg.br"}, {"n": "Lula da Fonte", "p": "PP", "e": "PE", "s": "Direita", "m": "dep.luladafonte@camara.leg.br"}, {"n": "Magda Mofatto", "p": "PL", "e": "GO", "s": "Direita", "m": "dep.magdamofatto@camara.leg.br"}, {"n": "Marangoni", "p": "PODE", "e": "SP", "s": "Sem classificação", "m": "dep.marangoni@camara.leg.br"}, {"n": "Marcel van Hattem", "p": "NOVO", "e": "RS", "s": "Direita", "m": "dep.marcelvanhattem@camara.leg.br"}, {"n": "Marcelo Álvaro Antônio", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.marceloalvaroantonio@camara.leg.br"}, {"n": "Marcelo Crivella", "p": "REPUBLICANOS", "e": "RJ", "s": "Direita", "m": "dep.marcelocrivella@camara.leg.br"}, {"n": "Marcelo Moraes", "p": "PL", "e": "RS", "s": "Direita", "m": "dep.marcelomoraes@camara.leg.br"}, {"n": "Marcelo Nilo", "p": "REPUBLICANOS", "e": "BA", "s": "Direita", "m": "dep.marcelonilo@camara.leg.br"}, {"n": "Marcelo Queiroz", "p": "PSDB", "e": "RJ", "s": "Sem classificação", "m": "dep.marceloqueiroz@camara.leg.br"}, {"n": "Marcio Alvino", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.marcioalvino@camara.leg.br"}, {"n": "Márcio Biolchi", "p": "MDB", "e": "RS", "s": "Centro", "m": "dep.marciobiolchi@camara.leg.br"}, {"n": "Márcio Honaiser", "p": "SOLIDARIEDADE", "e": "MA", "s": "Sem classificação", "m": "dep.marciohonaiser@camara.leg.br"}, {"n": "Márcio Jerry", "p": "PCdoB", "e": "MA", "s": "Sem classificação", "m": "dep.marciojerry@camara.leg.br"}, {"n": "Márcio Marinho", "p": "REPUBLICANOS", "e": "BA", "s": "Direita", "m": "dep.marciomarinho@camara.leg.br"}, {"n": "Marcon", "p": "PT", "e": "RS", "s": "Esquerda", "m": "dep.marcon@camara.leg.br"}, {"n": "Marcos Aurélio Sampaio", "p": "MDB", "e": "PI", "s": "Centro", "m": "dep.marcosaureliosampaio@camara.leg.br"}, {"n": "Marcos Braz", "p": "PSDB", "e": "RJ", "s": "Sem classificação", "m": "dep.marcosbraz@camara.leg.br"}, {"n": "Marcos Pereira", "p": "REPUBLICANOS", "e": "SP", "s": "Direita", "m": "dep.marcospereira@camara.leg.br"}, {"n": "Marcos Pollon", "p": "PL", "e": "MS", "s": "Direita", "m": "dep.marcospollon@camara.leg.br"}, {"n": "Marcos Soares", "p": "PSDB", "e": "RJ", "s": "Sem classificação", "m": "dep.marcossoares@camara.leg.br"}, {"n": "Marcos Tavares", "p": "PDT", "e": "RJ", "s": "Centro-esquerda", "m": "dep.marcostavares@camara.leg.br"}, {"n": "Maria Arraes", "p": "PSB", "e": "PE", "s": "Centro-esquerda", "m": "dep.mariaarraes@camara.leg.br"}, {"n": "Maria do Rosário", "p": "PT", "e": "RS", "s": "Esquerda", "m": "dep.mariadorosario@camara.leg.br"}, {"n": "Maria Rosas", "p": "REPUBLICANOS", "e": "SP", "s": "Direita", "m": "dep.mariarosas@camara.leg.br"}, {"n": "Marina Silva", "p": "REDE", "e": "SP", "s": "Centro-esquerda", "m": "dep.marinasilva@camara.leg.br"}, {"n": "Mario Frias", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.mariofrias@camara.leg.br"}, {"n": "Mário Heringer", "p": "PDT", "e": "MG", "s": "Centro-esquerda", "m": "dep.marioheringer@camara.leg.br"}, {"n": "Mário Negromonte Jr.", "p": "PSB", "e": "BA", "s": "Centro-esquerda", "m": "dep.marionegromontejr@camara.leg.br"}, {"n": "Marreca Filho", "p": "PRD", "e": "MA", "s": "Centro-direita", "m": "dep.marrecafilho@camara.leg.br"}, {"n": "Marussa Boldrin", "p": "REPUBLICANOS", "e": "GO", "s": "Direita", "m": "dep.marussaboldrin@camara.leg.br"}, {"n": "Marx Beltrão", "p": "UNIÃO", "e": "AL", "s": "Centro-direita", "m": "dep.marxbeltrao@camara.leg.br"}, {"n": "Matheus Noronha", "p": "PL", "e": "CE", "s": "Direita", "m": "dep.matheusnoronha@camara.leg.br"}, {"n": "Maurício Carvalho", "p": "UNIÃO", "e": "RO", "s": "Centro-direita", "m": "dep.mauriciocarvalho@camara.leg.br"}, {"n": "Mauricio do Vôlei", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.mauriciodovolei@camara.leg.br"}, {"n": "Mauricio Marcon", "p": "PL", "e": "RS", "s": "Direita", "m": "dep.mauriciomarcon@camara.leg.br"}, {"n": "Mauricio Neves", "p": "PP", "e": "SP", "s": "Direita", "m": "dep.mauricioneves@camara.leg.br"}, {"n": "Mauro Benevides Filho", "p": "UNIÃO", "e": "CE", "s": "Centro-direita", "m": "dep.maurobenevidesfilho@camara.leg.br"}, {"n": "Max Lemos", "p": "UNIÃO", "e": "RJ", "s": "Centro-direita", "m": "dep.maxlemos@camara.leg.br"}, {"n": "Meire Serafim", "p": "UNIÃO", "e": "AC", "s": "Centro-direita", "m": "dep.meireserafim@camara.leg.br"}, {"n": "Mendonça Filho", "p": "PL", "e": "PE", "s": "Direita", "m": "dep.mendoncafilho@camara.leg.br"}, {"n": "Merlong Solano", "p": "PT", "e": "PI", "s": "Esquerda", "m": "dep.merlongsolano@camara.leg.br"}, {"n": "Mersinho Lucena", "p": "PSD", "e": "PB", "s": "Sem classificação", "m": "dep.mersinholucena@camara.leg.br"}, {"n": "Messias Donato", "p": "UNIÃO", "e": "ES", "s": "Centro-direita", "m": "dep.messiasdonato@camara.leg.br"}, {"n": "Miguel Ângelo", "p": "PT", "e": "MG", "s": "Esquerda", "m": "dep.miguelangelo@camara.leg.br"}, {"n": "Miguel Lombardi", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.miguellombardi@camara.leg.br"}, {"n": "Milton Vieira", "p": "REPUBLICANOS", "e": "SP", "s": "Direita", "m": "dep.miltonvieira@camara.leg.br"}, {"n": "Misael Varella", "p": "PSD", "e": "MG", "s": "Sem classificação", "m": "dep.misaelvarella@camara.leg.br"}, {"n": "Missionário José Olimpio", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.missionariojoseolimpio@camara.leg.br"}, {"n": "Moses Rodrigues", "p": "UNIÃO", "e": "CE", "s": "Centro-direita", "m": "dep.mosesrodrigues@camara.leg.br"}, {"n": "Murillo Gouvea", "p": "PSDB", "e": "RJ", "s": "Sem classificação", "m": "dep.murillogouvea@camara.leg.br"}, {"n": "Natália Bonavides", "p": "PT", "e": "RN", "s": "Esquerda", "m": "dep.nataliabonavides@camara.leg.br"}, {"n": "Nelson Barbudo", "p": "PODE", "e": "MT", "s": "Sem classificação", "m": "dep.nelsonbarbudo@camara.leg.br"}, {"n": "Nely Aquino", "p": "PODE", "e": "MG", "s": "Sem classificação", "m": "dep.nelyaquino@camara.leg.br"}, {"n": "Neto Carletto", "p": "AVANTE", "e": "BA", "s": "Centro", "m": "dep.netocarletto@camara.leg.br"}, {"n": "Newton Cardoso Jr", "p": "MDB", "e": "MG", "s": "Centro", "m": "dep.newtoncardosojr@camara.leg.br"}, {"n": "Nicoletti", "p": "PL", "e": "RR", "s": "Direita", "m": "dep.nicoletti@camara.leg.br"}, {"n": "Nikolas Ferreira", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.nikolasferreira@camara.leg.br"}, {"n": "Nilto Tatto", "p": "PT", "e": "SP", "s": "Esquerda", "m": "dep.niltotatto@camara.leg.br"}, {"n": "Olival Marques", "p": "PODE", "e": "PA", "s": "Sem classificação", "m": "dep.olivalmarques@camara.leg.br"}, {"n": "Orlando Silva", "p": "PCdoB", "e": "SP", "s": "Sem classificação", "m": "dep.orlandosilva@camara.leg.br"}, {"n": "Osmar Terra", "p": "PL", "e": "RS", "s": "Direita", "m": "dep.osmarterra@camara.leg.br"}, {"n": "Otoni de Paula", "p": "PSD", "e": "RJ", "s": "Sem classificação", "m": "dep.otonidepaula@camara.leg.br"}, {"n": "Padre João", "p": "PT", "e": "MG", "s": "Esquerda", "m": "dep.padrejoao@camara.leg.br"}, {"n": "Pastor Diniz", "p": "UNIÃO", "e": "RR", "s": "Centro-direita", "m": "dep.pastordiniz@camara.leg.br"}, {"n": "Pastor Eurico", "p": "PSDB", "e": "PE", "s": "Sem classificação", "m": "dep.pastoreurico@camara.leg.br"}, {"n": "Pastor Gil", "p": "PL", "e": "MA", "s": "Direita", "m": "dep.pastorgil@camara.leg.br"}, {"n": "Pastor Henrique Vieira", "p": "PSOL", "e": "RJ", "s": "Esquerda", "m": "dep.pastorhenriquevieira@camara.leg.br"}, {"n": "Pastor Sargento Isidório", "p": "AVANTE", "e": "BA", "s": "Centro", "m": "dep.pastorsargentoisidorio@camara.leg.br"}, {"n": "Patrus Ananias", "p": "PT", "e": "MG", "s": "Esquerda", "m": "dep.patrusananias@camara.leg.br"}, {"n": "Paulão", "p": "PT", "e": "AL", "s": "Esquerda", "m": "dep.paulao@camara.leg.br"}, {"n": "Paulinho da Força", "p": "SOLIDARIEDADE", "e": "SP", "s": "Sem classificação", "m": "dep.paulinhodaforca@camara.leg.br"}, {"n": "Paulo Abi-Ackel", "p": "PSDB", "e": "MG", "s": "Sem classificação", "m": "dep.pauloabiackel@camara.leg.br"}, {"n": "Paulo Alexandre Barbosa", "p": "PSD", "e": "SP", "s": "Sem classificação", "m": "dep.pauloalexandrebarbosa@camara.leg.br"}, {"n": "Paulo Azi", "p": "UNIÃO", "e": "BA", "s": "Centro-direita", "m": "dep.pauloazi@camara.leg.br"}, {"n": "Paulo Folletto", "p": "PSB", "e": "ES", "s": "Centro-esquerda", "m": "dep.paulofolletto@camara.leg.br"}, {"n": "Paulo Freire Costa", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.paulofreirecosta@camara.leg.br"}, {"n": "Paulo Guedes", "p": "PT", "e": "MG", "s": "Esquerda", "m": "dep.pauloguedes@camara.leg.br"}, {"n": "Paulo Lemos", "p": "PT", "e": "AP", "s": "Esquerda", "m": "dep.paulolemos@camara.leg.br"}, {"n": "Paulo Litro", "p": "UNIÃO", "e": "PR", "s": "Centro-direita", "m": "dep.paulolitro@camara.leg.br"}, {"n": "Paulo Magalhães", "p": "PSD", "e": "BA", "s": "Sem classificação", "m": "dep.paulomagalhaes@camara.leg.br"}, {"n": "Paulo Pimenta", "p": "PT", "e": "RS", "s": "Esquerda", "m": "dep.paulopimenta@camara.leg.br"}, {"n": "Paulo Soares", "p": "PODE", "e": "SP", "s": "Sem classificação", "m": "dep.paulosoares@camara.leg.br"}, {"n": "Paulo Teixeira", "p": "PT", "e": "SP", "s": "Esquerda", "m": "dep.pauloteixeira@camara.leg.br"}, {"n": "Pedro Aihara", "p": "PP", "e": "MG", "s": "Direita", "m": "dep.pedroaihara@camara.leg.br"}, {"n": "Pedro Campos", "p": "PSB", "e": "PE", "s": "Centro-esquerda", "m": "dep.pedrocampos@camara.leg.br"}, {"n": "Pedro Lucas Fernandes", "p": "UNIÃO", "e": "MA", "s": "Centro-direita", "m": "dep.pedrolucasfernandes@camara.leg.br"}, {"n": "Pedro Lupion", "p": "REPUBLICANOS", "e": "PR", "s": "Direita", "m": "dep.pedrolupion@camara.leg.br"}, {"n": "Pedro Paulo", "p": "PSD", "e": "RJ", "s": "Sem classificação", "m": "dep.pedropaulo@camara.leg.br"}, {"n": "Pedro Uczai", "p": "PT", "e": "SC", "s": "Esquerda", "m": "dep.pedrouczai@camara.leg.br"}, {"n": "Pedro Westphalen", "p": "PP", "e": "RS", "s": "Direita", "m": "dep.pedrowestphalen@camara.leg.br"}, {"n": "Pezenti", "p": "MDB", "e": "SC", "s": "Centro", "m": "dep.pezenti@camara.leg.br"}, {"n": "Pinheirinho", "p": "PP", "e": "MG", "s": "Direita", "m": "dep.pinheirinho@camara.leg.br"}, {"n": "Pompeo de Mattos", "p": "PDT", "e": "RS", "s": "Centro-esquerda", "m": "dep.pompeodemattos@camara.leg.br"}, {"n": "Pr. Marco Feliciano", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.pr.marcofeliciano@camara.leg.br"}, {"n": "Prof. Reginaldo Veras", "p": "PV", "e": "DF", "s": "Centro-esquerda", "m": "dep.prof.reginaldoveras@camara.leg.br"}, {"n": "Professor Alcides", "p": "PSDB", "e": "GO", "s": "Sem classificação", "m": "dep.professoralcides@camara.leg.br"}, {"n": "Professora Luciene Cavalcante", "p": "PSOL", "e": "SP", "s": "Esquerda", "m": "dep.professoralucienecavalcante@camara.leg.br"}, {"n": "Professora Marcivania", "p": "PCdoB", "e": "AP", "s": "Sem classificação", "m": "dep.professoramarcivania@camara.leg.br"}, {"n": "Rafael Brito", "p": "MDB", "e": "AL", "s": "Centro", "m": "dep.rafaelbrito@camara.leg.br"}, {"n": "Rafael Fera", "p": "PODE", "e": "RO", "s": "Sem classificação", "m": "dep.rafaelfera@camara.leg.br"}, {"n": "Rafael Prudente", "p": "MDB", "e": "DF", "s": "Centro", "m": "dep.rafaelprudente@camara.leg.br"}, {"n": "Rafael Simoes", "p": "UNIÃO", "e": "MG", "s": "Centro-direita", "m": "dep.rafaelsimoes@camara.leg.br"}, {"n": "Raimundo Costa", "p": "PSD", "e": "BA", "s": "Sem classificação", "m": "dep.raimundocosta@camara.leg.br"}, {"n": "Raimundo Santos", "p": "PSD", "e": "PA", "s": "Sem classificação", "m": "dep.raimundosantos@camara.leg.br"}, {"n": "Raniery Paulino", "p": "REPUBLICANOS", "e": "PB", "s": "Direita", "m": "dep.ranierypaulino@camara.leg.br"}, {"n": "Reginaldo Lopes", "p": "PT", "e": "MG", "s": "Esquerda", "m": "dep.reginaldolopes@camara.leg.br"}, {"n": "Reimont", "p": "PT", "e": "RJ", "s": "Esquerda", "m": "dep.reimont@camara.leg.br"}, {"n": "Renilce Nicodemos", "p": "MDB", "e": "PA", "s": "Centro", "m": "dep.renilcenicodemos@camara.leg.br"}, {"n": "Renildo Calheiros", "p": "PCdoB", "e": "PE", "s": "Sem classificação", "m": "dep.renildocalheiros@camara.leg.br"}, {"n": "Ribamar Silva", "p": "PODE", "e": "SP", "s": "Sem classificação", "m": "dep.ribamarsilva@camara.leg.br"}, {"n": "Ricardo Abrão", "p": "PSDB", "e": "RJ", "s": "Sem classificação", "m": "dep.ricardoabrao@camara.leg.br"}, {"n": "Ricardo Ayres", "p": "REPUBLICANOS", "e": "TO", "s": "Direita", "m": "dep.ricardoayres@camara.leg.br"}, {"n": "Ricardo Barros", "p": "PP", "e": "PR", "s": "Direita", "m": "dep.ricardobarros@camara.leg.br"}, {"n": "Ricardo Guidi", "p": "PL", "e": "SC", "s": "Direita", "m": "dep.ricardoguidi@camara.leg.br"}, {"n": "Ricardo Maia", "p": "MDB", "e": "BA", "s": "Centro", "m": "dep.ricardomaia@camara.leg.br"}, {"n": "Ricardo Salles", "p": "NOVO", "e": "SP", "s": "Direita", "m": "dep.ricardosalles@camara.leg.br"}, {"n": "Robério Monteiro", "p": "PSB", "e": "CE", "s": "Centro-esquerda", "m": "dep.roberiomonteiro@camara.leg.br"}, {"n": "Roberta Roma", "p": "PL", "e": "BA", "s": "Direita", "m": "dep.robertaroma@camara.leg.br"}, {"n": "Roberto Duarte", "p": "REPUBLICANOS", "e": "AC", "s": "Direita", "m": "dep.robertoduarte@camara.leg.br"}, {"n": "Roberto Monteiro Pai", "p": "PL", "e": "RJ", "s": "Direita", "m": "dep.robertomonteiropai@camara.leg.br"}, {"n": "Robinson Faria", "p": "PP", "e": "RN", "s": "Direita", "m": "dep.robinsonfaria@camara.leg.br"}, {"n": "Rodolfo Nogueira", "p": "PL", "e": "MS", "s": "Direita", "m": "dep.rodolfonogueira@camara.leg.br"}, {"n": "Rodrigo da Zaeli", "p": "PL", "e": "MT", "s": "Direita", "m": "dep.rodrigodazaeli@camara.leg.br"}, {"n": "Rodrigo de Castro", "p": "UNIÃO", "e": "MG", "s": "Centro-direita", "m": "dep.rodrigodecastro@camara.leg.br"}, {"n": "Rodrigo Gambale", "p": "PODE", "e": "SP", "s": "Sem classificação", "m": "dep.rodrigogambale@camara.leg.br"}, {"n": "Rodrigo Rollemberg", "p": "PSB", "e": "DF", "s": "Centro-esquerda", "m": "dep.rodrigorollemberg@camara.leg.br"}, {"n": "Rodrigo Valadares", "p": "PL", "e": "SE", "s": "Direita", "m": "dep.rodrigovaladares@camara.leg.br"}, {"n": "Rogéria Santos", "p": "REPUBLICANOS", "e": "BA", "s": "Direita", "m": "dep.rogeriasantos@camara.leg.br"}, {"n": "Rogério Correia", "p": "PT", "e": "MG", "s": "Esquerda", "m": "dep.rogeriocorreia@camara.leg.br"}, {"n": "Romero Rodrigues", "p": "PODE", "e": "PB", "s": "Sem classificação", "m": "dep.romerorodrigues@camara.leg.br"}, {"n": "Rosana Valle", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.rosanavalle@camara.leg.br"}, {"n": "Rosangela Gomes", "p": "REPUBLICANOS", "e": "RJ", "s": "Direita", "m": "dep.rosangelagomes@camara.leg.br"}, {"n": "Rosangela Moro", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.rosangelamoro@camara.leg.br"}, {"n": "Rosângela Reis", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.rosangelareis@camara.leg.br"}, {"n": "Rubens Otoni", "p": "PT", "e": "GO", "s": "Esquerda", "m": "dep.rubensotoni@camara.leg.br"}, {"n": "Rubens Pereira Júnior", "p": "PT", "e": "MA", "s": "Esquerda", "m": "dep.rubenspereirajunior@camara.leg.br"}, {"n": "Rui Falcão", "p": "PT", "e": "SP", "s": "Esquerda", "m": "dep.ruifalcao@camara.leg.br"}, {"n": "Ruy Carneiro", "p": "PODE", "e": "PB", "s": "Sem classificação", "m": "dep.ruycarneiro@camara.leg.br"}, {"n": "Sâmia Bomfim", "p": "PSOL", "e": "SP", "s": "Esquerda", "m": "dep.samiabomfim@camara.leg.br"}, {"n": "Samuel Viana", "p": "UNIÃO", "e": "MG", "s": "Centro-direita", "m": "dep.samuelviana@camara.leg.br"}, {"n": "Sanderson", "p": "PL", "e": "RS", "s": "Direita", "m": "dep.sanderson@camara.leg.br"}, {"n": "Sandro Alex", "p": "PSD", "e": "PR", "s": "Sem classificação", "m": "dep.sandroalex@camara.leg.br"}, {"n": "Santin Roveda", "p": "UNIÃO", "e": "PR", "s": "Centro-direita", "m": "dep.santinroveda@camara.leg.br"}, {"n": "Sargento Fahur", "p": "PL", "e": "PR", "s": "Direita", "m": "dep.sargentofahur@camara.leg.br"}, {"n": "Sargento Gonçalves", "p": "PL", "e": "RN", "s": "Direita", "m": "dep.sargentogoncalves@camara.leg.br"}, {"n": "Sargento Portugal", "p": "PODE", "e": "RJ", "s": "Sem classificação", "m": "dep.sargentoportugal@camara.leg.br"}, {"n": "Saullo Vianna", "p": "MDB", "e": "AM", "s": "Centro", "m": "dep.saullovianna@camara.leg.br"}, {"n": "Saulo Pedroso", "p": "PSD", "e": "SP", "s": "Sem classificação", "m": "dep.saulopedroso@camara.leg.br"}, {"n": "Sérgio Brito", "p": "PSD", "e": "BA", "s": "Sem classificação", "m": "dep.sergiobrito@camara.leg.br"}, {"n": "Sergio Souza", "p": "MDB", "e": "PR", "s": "Centro", "m": "dep.sergiosouza@camara.leg.br"}, {"n": "Sérgio Turra", "p": "PP", "e": "RS", "s": "Direita", "m": "dep.sergioturra@camara.leg.br"}, {"n": "Sidney Leite", "p": "PSD", "e": "AM", "s": "Sem classificação", "m": "dep.sidneyleite@camara.leg.br"}, {"n": "Silvia Cristina", "p": "PP", "e": "RO", "s": "Direita", "m": "dep.silviacristina@camara.leg.br"}, {"n": "Silvio Costa Filho", "p": "REPUBLICANOS", "e": "PE", "s": "Direita", "m": "dep.silviocostafilho@camara.leg.br"}, {"n": "Silvye Alves", "p": "UNIÃO", "e": "GO", "s": "Centro-direita", "m": "dep.silvyealves@camara.leg.br"}, {"n": "Simone Marquetto", "p": "PP", "e": "SP", "s": "Direita", "m": "dep.simonemarquetto@camara.leg.br"}, {"n": "Socorro Neri", "p": "PP", "e": "AC", "s": "Direita", "m": "dep.socorroneri@camara.leg.br"}, {"n": "Sônia Guajajara", "p": "PSOL", "e": "SP", "s": "Esquerda", "m": "dep.soniaguajajara@camara.leg.br"}, {"n": "Soraya Santos", "p": "PL", "e": "RJ", "s": "Direita", "m": "dep.sorayasantos@camara.leg.br"}, {"n": "Sóstenes Cavalcante", "p": "PL", "e": "RJ", "s": "Direita", "m": "dep.sostenescavalcante@camara.leg.br"}, {"n": "Stefano Aguiar", "p": "PSD", "e": "MG", "s": "Sem classificação", "m": "dep.stefanoaguiar@camara.leg.br"}, {"n": "Tabata Amaral", "p": "PSB", "e": "SP", "s": "Centro-esquerda", "m": "dep.tabataamaral@camara.leg.br"}, {"n": "Tadeu Veneri", "p": "PT", "e": "PR", "s": "Esquerda", "m": "dep.tadeuveneri@camara.leg.br"}, {"n": "Talíria Petrone", "p": "PSOL", "e": "RJ", "s": "Esquerda", "m": "dep.taliriapetrone@camara.leg.br"}, {"n": "Tarcísio Motta", "p": "PSOL", "e": "RJ", "s": "Esquerda", "m": "dep.tarcisiomotta@camara.leg.br"}, {"n": "Thiago de Joaldo", "p": "REPUBLICANOS", "e": "SE", "s": "Direita", "m": "dep.thiagodejoaldo@camara.leg.br"}, {"n": "Thiago Flores", "p": "UNIÃO", "e": "RO", "s": "Centro-direita", "m": "dep.thiagoflores@camara.leg.br"}, {"n": "Tiago Dimas", "p": "PODE", "e": "TO", "s": "Sem classificação", "m": "dep.tiagodimas@camara.leg.br"}, {"n": "Tião Medeiros", "p": "PP", "e": "PR", "s": "Direita", "m": "dep.tiaomedeiros@camara.leg.br"}, {"n": "Tiririca", "p": "PSD", "e": "SP", "s": "Sem classificação", "m": "dep.tiririca@camara.leg.br"}, {"n": "Toninho Wandscheer", "p": "PP", "e": "PR", "s": "Direita", "m": "dep.toninhowandscheer@camara.leg.br"}, {"n": "Túlio Gadêlha", "p": "PSD", "e": "PE", "s": "Sem classificação", "m": "dep.tuliogadelha@camara.leg.br"}, {"n": "Valdir Trindade", "p": "REPUBLICANOS", "e": "PB", "s": "Direita", "m": "dep.valdirtrindade@camara.leg.br"}, {"n": "Valmir Assunção", "p": "PT", "e": "BA", "s": "Esquerda", "m": "dep.valmirassuncao@camara.leg.br"}, {"n": "Vander Loubet", "p": "PT", "e": "MS", "s": "Esquerda", "m": "dep.vanderloubet@camara.leg.br"}, {"n": "Vavá", "p": "AVANTE", "e": "MG", "s": "Centro", "m": "dep.vava@camara.leg.br"}, {"n": "Vermelho", "p": "PL", "e": "PR", "s": "Direita", "m": "dep.vermelho@camara.leg.br"}, {"n": "Vicentinho Júnior", "p": "PSDB", "e": "TO", "s": "Sem classificação", "m": "dep.vicentinhojunior@camara.leg.br"}, {"n": "Vinicius Carvalho", "p": "PL", "e": "SP", "s": "Direita", "m": "dep.viniciuscarvalho@camara.leg.br"}, {"n": "Vinicius Gurgel", "p": "PL", "e": "AP", "s": "Direita", "m": "dep.viniciusgurgel@camara.leg.br"}, {"n": "Vitor Lippi", "p": "PSD", "e": "SP", "s": "Sem classificação", "m": "dep.vitorlippi@camara.leg.br"}, {"n": "Waldemar Oliveira", "p": "AVANTE", "e": "PE", "s": "Centro", "m": "dep.waldemaroliveira@camara.leg.br"}, {"n": "Waldenor Pereira", "p": "PT", "e": "BA", "s": "Esquerda", "m": "dep.waldenorpereira@camara.leg.br"}, {"n": "Weliton Prado", "p": "PSD", "e": "MG", "s": "Sem classificação", "m": "dep.welitonprado@camara.leg.br"}, {"n": "Wellington Roberto", "p": "PSD", "e": "PB", "s": "Sem classificação", "m": "dep.wellingtonroberto@camara.leg.br"}, {"n": "Welter", "p": "PT", "e": "PR", "s": "Esquerda", "m": "dep.welter@camara.leg.br"}, {"n": "Yandra Moura", "p": "UNIÃO", "e": "SE", "s": "Centro-direita", "m": "dep.yandramoura@camara.leg.br"}, {"n": "Yury do Paredão", "p": "MDB", "e": "CE", "s": "Centro", "m": "dep.yurydoparedao@camara.leg.br"}, {"n": "Zé Adriano", "p": "PP", "e": "AC", "s": "Direita", "m": "dep.zeadriano@camara.leg.br"}, {"n": "Zé Haroldo Cathedral", "p": "UNIÃO", "e": "RR", "s": "Centro-direita", "m": "dep.zeharoldocathedral@camara.leg.br"}, {"n": "Zé Neto", "p": "PT", "e": "BA", "s": "Esquerda", "m": "dep.zeneto@camara.leg.br"}, {"n": "Zé Silva", "p": "UNIÃO", "e": "MG", "s": "Centro-direita", "m": "dep.zesilva@camara.leg.br"}, {"n": "Zé Trovão", "p": "PL", "e": "SC", "s": "Direita", "m": "dep.zetrovao@camara.leg.br"}, {"n": "Zé Vitor", "p": "PL", "e": "MG", "s": "Direita", "m": "dep.zevitor@camara.leg.br"}, {"n": "Zeca Dirceu", "p": "PT", "e": "PR", "s": "Esquerda", "m": "dep.zecadirceu@camara.leg.br"}, {"n": "Zezinho Barbary", "p": "PP", "e": "AC", "s": "Direita", "m": "dep.zezinhobarbary@camara.leg.br"}, {"n": "Zucco", "p": "PL", "e": "RS", "s": "Direita", "m": "dep.zucco@camara.leg.br"}];
+
+const SPECTRUM_COLORS = {
+  "Esquerda": "#a8313a",
+  "Centro-esquerda": "#c06b3e",
+  "Centro": "#8a7a4e",
+  "Centro-direita": "#3c6e71",
+  "Direita": "#1f4e79",
+  "Sem classificação": "#7a7470"
+};
+
+const SPECTRUM_ORDER = ["Esquerda","Centro-esquerda","Centro","Centro-direita","Direita","Sem classificação"];
+
+let state = {
+  spectrums: new Set(),
+  uf: "",
+  party: "",
+  query: "",
+  selected: new Set()
+};
+
+function uniqueSorted(key){
+  return [...new Set(DATA.map(d => d[key]))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+}
+
+function buildSpectrumChips(){
+  const wrap = document.getElementById('spectrumChips');
+  SPECTRUM_ORDER.forEach(spec => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip';
+    btn.setAttribute('aria-pressed','false');
+    btn.dataset.spectrum = spec;
+    const color = SPECTRUM_COLORS[spec] || '#999';
+    btn.innerHTML = '<span class="swatch" style="background:'+color+'"></span>' + spec;
+    btn.addEventListener('click', () => {
+      if(state.spectrums.has(spec)){
+        state.spectrums.delete(spec);
+        btn.setAttribute('aria-pressed','false');
+      } else {
+        state.spectrums.add(spec);
+        btn.setAttribute('aria-pressed','true');
+      }
+      render();
+    });
+    wrap.appendChild(btn);
+  });
+}
+
+function buildSelect(id, key, allLabel){
+  const sel = document.getElementById(id);
+  uniqueSorted(key).forEach(val => {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = val;
+    sel.appendChild(opt);
+  });
+}
+
+function matchesFilters(d){
+  if(state.spectrums.size > 0 && !state.spectrums.has(d.s)) return false;
+  if(state.uf && d.e !== state.uf) return false;
+  if(state.party && d.p !== state.party) return false;
+  if(state.query){
+    const q = state.query.toLowerCase();
+    if(!d.n.toLowerCase().includes(q)) return false;
+  }
+  return true;
+}
+
+function render(){
+  const grid = document.getElementById('resultsGrid');
+  const empty = document.getElementById('emptyState');
+  grid.innerHTML = '';
+
+  const filtered = DATA.filter(matchesFilters);
+  document.getElementById('countNum').textContent = filtered.length;
+
+  if(filtered.length === 0){
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    filtered.forEach(d => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.setAttribute('role','listitem');
+      const color = SPECTRUM_COLORS[d.s] || '#999';
+      const checked = state.selected.has(d.m) ? 'checked' : '';
+      card.innerHTML =
+        '<label class="card-select"><input type="checkbox" data-email="'+d.m+'" '+checked+' aria-label="Selecionar '+d.n+'"></label>' +
+        '<p class="card-name">'+d.n+'</p>' +
+        '<p class="card-meta"><span class="dot" style="background:'+color+'"></span><span class="uf">'+d.e+'</span> &middot; '+d.p+' &middot; '+d.s+'</p>' +
+        '<p class="card-email"><a href="mailto:'+d.m+'">'+d.m+'</a></p>';
+      grid.appendChild(card);
+    });
+  }
+  updateSelectedCount();
+}
+
+function updateSelectedCount(){
+  document.getElementById('selectedCount').textContent = state.selected.size;
+}
+
+document.addEventListener('change', (e) => {
+  if(e.target.matches('input[type=checkbox][data-email]')){
+    const email = e.target.dataset.email;
+    if(e.target.checked) state.selected.add(email);
+    else state.selected.delete(email);
+    updateSelectedCount();
+  }
+});
+
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  state.query = e.target.value;
+  render();
+});
+
+document.getElementById('stateSelect').addEventListener('change', (e) => {
+  state.uf = e.target.value;
+  render();
+});
+
+document.getElementById('partySelect').addEventListener('change', (e) => {
+  state.party = e.target.value;
+  render();
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  state.spectrums.clear();
+  state.uf = '';
+  state.party = '';
+  state.query = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('stateSelect').value = '';
+  document.getElementById('partySelect').value = '';
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed','false'));
+  render();
+});
+
+document.getElementById('selectAllBtn').addEventListener('click', () => {
+  const filtered = DATA.filter(matchesFilters);
+  const allSelected = filtered.every(d => state.selected.has(d.m));
+  if(allSelected){
+    filtered.forEach(d => state.selected.delete(d.m));
+  } else {
+    filtered.forEach(d => state.selected.add(d.m));
+  }
+  render();
+});
+
+function getExportList(){
+  if(state.selected.size > 0){
+    return [...state.selected];
+  }
+  return DATA.filter(matchesFilters).map(d => d.m);
+}
+
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  const list = getExportList();
+  const text = list.join('\n');
+  try{
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('copyBtn');
+    const original = btn.textContent;
+    btn.textContent = 'Copiado!';
+    setTimeout(()=> btn.textContent = original, 1500);
+  } catch(err){
+    alert('Não foi possível copiar automaticamente. Lista:\n\n' + text);
+  }
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const list = getExportList();
+  const text = list.join('\n');
+  const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'emails_deputados_filtrados.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('todayLabel').textContent = new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'});
+
+buildSpectrumChips();
+buildSelect('stateSelect','e');
+buildSelect('partySelect','p');
+render();
+</script>
+
+</body>
+</html>
